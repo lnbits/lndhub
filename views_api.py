@@ -115,7 +115,7 @@ async def lndhub_balance(
 @lndhub_ext.get("/ext/gettxs")
 async def lndhub_gettxs(
     wallet: WalletTypeInfo = Depends(check_wallet),
-    limit: int = Query(20, ge=1, le=20),
+    limit: int = Query(20, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
     for payment in await get_payments(
