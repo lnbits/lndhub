@@ -160,7 +160,7 @@ async def lndhub_gettxs(
 @lndhub_ext.get("/ext/getuserinvoices")
 async def lndhub_getuserinvoices(
     wallet: WalletTypeInfo = Depends(check_wallet),
-    limit: int = Query(20, ge=1, le=20),
+    limit: int = Query(20, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
     WALLET = get_wallet_class()
