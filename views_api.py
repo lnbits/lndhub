@@ -134,9 +134,9 @@ async def lndhub_gettxs(
         {
             "payment_preimage": payment.preimage,
             "payment_hash": payment.payment_hash,
-            "fee_msat": payment.fee * 1000,
+            "fee_msat": payment.fee,
             "type": "paid_invoice",
-            "fee": payment.fee,
+            "fee": payment.fee / 1000,
             "value": int(payment.amount / 1000),
             "timestamp": payment.time,
             "memo": payment.memo if not payment.pending else "Payment in transition",
