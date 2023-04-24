@@ -1,4 +1,6 @@
-<h1>lndhub Extension</h1>
+# lndhub Extension - <small>[LNbits](https://github.com/lnbits/lnbits) extension</small>
+<small>For more about LNBits extension check [this tutorial](https://github.com/lnbits/lnbits/wiki/LNbits-Extensions)</small>
+
 <h2>*connect to your lnbits wallet from BlueWallet or Zeus*</h2>
 
 Lndhub has nothing to do with lnd, it is just the name of the HTTP/JSON protocol https://bluewallet.io/ uses to talk to their Lightning custodian server at https://lndhub.io/.
