@@ -16,7 +16,6 @@ from . import lndhub_ext
 from .decorators import check_wallet, require_admin_key
 from .utils import decoded_as_lndhub, to_buffer
 
-
 @lndhub_ext.get("/ext/getinfo")
 async def lndhub_getinfo():
     return {"alias": settings.lnbits_site_title}
@@ -130,6 +129,12 @@ async def lndhub_gettxs(
     ):
         await payment.check_status()
 
+    def extract_memo(payment):
+        try:
+            return payment.extra['comment']
+        except KeyError:
+            return  payment.memo if not payment.pending else "Payment in transition"
+
     return [
         {
             "payment_preimage": payment.preimage,
@@ -139,7 +144,7 @@ async def lndhub_gettxs(
             "fee": payment.fee / 1000,
             "value": int(payment.amount / 1000),
             "timestamp": payment.time,
-            "memo": payment.memo if not payment.pending else "Payment in transition",
+            "memo": extract_memo(payment),
         }
         for payment in reversed(
             (
@@ -178,12 +183,20 @@ async def lndhub_getuserinvoices(
             (await WALLET.get_invoice_status(invoice.checking_id)).pending
         )
 
+    def extract_description(invoice):
+        try:
+            return invoice.extra['comment']
+        except KeyError:
+            return  invoice.memo
+
+
     return [
         {
             "r_hash": to_buffer(invoice.payment_hash),
             "payment_request": invoice.bolt11,
             "add_index": "500",
-            "description": invoice.memo,
+            #"description": invoice.memo,
+            "description": extract_description(invoice),
             "payment_hash": invoice.payment_hash,
             "ispaid": not invoice.pending,
             "amt": int(invoice.amount / 1000),
