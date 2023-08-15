@@ -8,22 +8,24 @@ from starlette.exceptions import HTTPException
 from lnbits.decorators import WalletTypeInfo, get_key_type
 
 api_key_header_auth = APIKeyHeader(
-    name="AUTHORIZATION",
+    name="Authorization",
     auto_error=False,
     description="Admin or Invoice key for LNDHub API's",
 )
 
 
 async def check_wallet(
-    r: Request, api_key_header_auth: str = Security(api_key_header_auth)
+    r: Request, api_key: str = Security(api_key_header_auth)
 ) -> WalletTypeInfo:
-    if not api_key_header_auth:
+    if not api_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth key"
         )
-
-    t = api_key_header_auth.split(" ")[1]
-    _, token = b64decode(t).decode().split(":")
+    if api_key.startswith("Bearer "):
+        t = api_key.split(" ")[1]
+        _, token = b64decode(t).decode().split(":")
+    else:
+        token = api_key
 
     return await get_key_type(r, api_key_header=token)
 
