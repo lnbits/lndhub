@@ -1,6 +1,7 @@
 {
-    "name": "LndHub",
-    "short_description": "Access lnbits from BlueWallet or Zeus",
-	"tile": "/lndhub/static/image/lndhub.png",
-    "contributors": ["fiatjaf"]
+  "name": "LndHub",
+  "short_description": "Access lnbits from BlueWallet or Zeus",
+  "tile": "/lndhub/static/image/lndhub.png",
+  "contributors": ["fiatjaf"],
+  "min_lnbits_version": "0.XX.0"
 }
