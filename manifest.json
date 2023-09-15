@@ -1,9 +1,9 @@
 {
-    "repos": [
-        {
-            "id": "lndhub",
-            "organisation": "lnbits",
-            "repository": "lndhub"
-        }
-    ]
+  "repos": [
+    {
+      "id": "lndhub",
+      "organisation": "lnbits",
+      "repository": "lndhub"
+    }
+  ]
 }
