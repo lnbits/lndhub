@@ -41,7 +41,7 @@ async def lndhub_auth(data: AuthData):
 
 
 class AddInvoice(BaseModel):
-    amt: str = Query(...)
+    amt: int = Query(...)
     memo: str = Query(...)
     preimage: str = Query(None)
 
@@ -53,14 +53,16 @@ async def lndhub_addinvoice(
     try:
         _, pr = await create_invoice(
             wallet_id=wallet.wallet.id,
-            amount=int(data.amt),
+            amount=data.amt,
             memo=data.memo or settings.lnbits_site_title,
             extra={"tag": "lndhub"},
         )
-    except:
+    except Exception as exc:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="Failed to create invoice"
+            status_code=HTTPStatus.NOT_FOUND,
+            detail=f"Failed to create invoice: {str(exc)}"
         )
+
     invoice = bolt11.decode(pr)
     return {
         "pay_req": pr,
