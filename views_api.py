@@ -16,6 +16,7 @@ from . import lndhub_ext
 from .decorators import check_wallet, require_admin_key
 from .utils import decoded_as_lndhub, to_buffer
 
+
 @lndhub_ext.get("/ext/getinfo")
 async def lndhub_getinfo():
     return {"alias": settings.lnbits_site_title}
@@ -128,12 +129,6 @@ async def lndhub_gettxs(
         exclude_uncheckable=True,
     ):
         await payment.check_status()
-
-    def extract_memo(payment):
-        try:
-            return payment.extra['comment']
-        except KeyError:
-            return  payment.memo if not payment.pending else "Payment in transition"
 
     return [
         {
