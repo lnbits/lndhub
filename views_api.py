@@ -141,7 +141,7 @@ async def lndhub_gettxs(
             "fee": payment.fee / 1000,
             "value": int(payment.amount / 1000),
             "timestamp": payment.time,
-            "memo": payment.memo if not payment.pending else "Payment in transition",
+            "memo": payment.extra.get("comment") or payment.memo if not payment.pending else "Payment in transition",
         }
         for payment in reversed(
             (
@@ -185,7 +185,7 @@ async def lndhub_getuserinvoices(
             "r_hash": to_buffer(invoice.payment_hash),
             "payment_request": invoice.bolt11,
             "add_index": "500",
-            "description": invoice.memo,
+            "description": invoice.extra.get("comment") or invoice.memo,
             "payment_hash": invoice.payment_hash,
             "ispaid": not invoice.pending,
             "amt": int(invoice.amount / 1000),
