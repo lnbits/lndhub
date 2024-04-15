@@ -10,7 +10,7 @@ from lnbits import bolt11
 from lnbits.core.crud import get_payments
 from lnbits.core.services import create_invoice, pay_invoice
 from lnbits.decorators import WalletTypeInfo
-from lnbits.settings import get_wallet_class, settings
+from lnbits.settings import get_funding_source, settings
 
 from . import lndhub_ext
 from .decorators import check_wallet, require_admin_key
@@ -165,7 +165,7 @@ async def lndhub_getuserinvoices(
     limit: int = Query(20, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
-    WALLET = get_wallet_class()
+    funding_source = get_funding_source()
     for invoice in await get_payments(
         wallet_id=wallet.wallet.id,
         complete=False,
@@ -177,7 +177,7 @@ async def lndhub_getuserinvoices(
         exclude_uncheckable=True,
     ):
         await invoice.set_pending(
-            (await WALLET.get_invoice_status(invoice.checking_id)).pending
+            (await funding_source.invoice_status(invoice.checking_id)).pending
         )
 
     return [
