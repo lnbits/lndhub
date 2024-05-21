@@ -34,7 +34,7 @@ async def require_admin_key(
     r: Request, api_key_header_auth: str = Security(api_key_header_auth)
 ):
     wallet = await check_wallet(r, api_key_header_auth)
-    if wallet.wallet_type != 0:
+    if wallet.key_type != 0:
         # If wallet type is not admin then return the unauthorized status
         # This also covers when the user passes an invalid key type
         raise HTTPException(
