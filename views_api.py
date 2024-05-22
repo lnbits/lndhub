@@ -177,7 +177,7 @@ async def lndhub_getuserinvoices(
         exclude_uncheckable=True,
     ):
         await invoice.set_pending(
-            (await funding_source.invoice_status(invoice.checking_id)).pending
+            (await funding_source.get_invoice_status(invoice.checking_id)).pending
         )
 
     return [
