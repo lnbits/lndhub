@@ -5,7 +5,8 @@ from fastapi.param_functions import Security
 from fastapi.security.api_key import APIKeyHeader
 from starlette.exceptions import HTTPException
 
-from lnbits.decorators import WalletTypeInfo, get_key_type
+from lnbits.decorators import get_key_type
+from lnbits.core.models import WalletTypeInfo
 
 api_key_header_auth = APIKeyHeader(
     name="Authorization",

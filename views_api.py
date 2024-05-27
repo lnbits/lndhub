@@ -1,35 +1,27 @@
 import time
 from base64 import urlsafe_b64encode
-from http import HTTPStatus
 
-from fastapi import Depends, Query
-from pydantic import BaseModel
-from starlette.exceptions import HTTPException
+from fastapi import Depends, Query, APIRouter
 
-from lnbits import bolt11
+from bolt11 import decode as bolt11_decode
 from lnbits.core.crud import get_payments
 from lnbits.core.services import create_invoice, pay_invoice
-from lnbits.decorators import WalletTypeInfo
-from lnbits.settings import get_funding_source, settings
+from lnbits.core.models import WalletTypeInfo
+from lnbits.settings import settings
 
-from . import lndhub_ext
 from .decorators import check_wallet, require_admin_key
 from .utils import decoded_as_lndhub, to_buffer
+from .models import LndhubAuthData, LndhubCreateInvoice, LndhubAddInvoice
 
+lndhub_api_router = APIRouter(prefix="/ext")
 
-@lndhub_ext.get("/ext/getinfo")
+@lndhub_api_router.get("/getinfo")
 async def lndhub_getinfo():
     return {"alias": settings.lnbits_site_title}
 
 
-class AuthData(BaseModel):
-    login: str = Query(None)
-    password: str = Query(None)
-    refresh_token: str = Query(None)
-
-
-@lndhub_ext.post("/ext/auth")
-async def lndhub_auth(data: AuthData):
+@lndhub_api_router.post("/auth")
+async def lndhub_auth(data: LndhubAuthData):
     token = (
         data.refresh_token
         if data.refresh_token
@@ -40,57 +32,43 @@ async def lndhub_auth(data: AuthData):
     return {"refresh_token": token, "access_token": token}
 
 
-class AddInvoice(BaseModel):
-    amt: int = Query(...)
-    memo: str = Query(...)
-    preimage: str = Query(None)
-
-
-@lndhub_ext.post("/ext/addinvoice")
+@lndhub_api_router.post("/addinvoice")
 async def lndhub_addinvoice(
-    data: AddInvoice, wallet: WalletTypeInfo = Depends(check_wallet)
+    data: LndhubAddInvoice, wallet: WalletTypeInfo = Depends(check_wallet)
 ):
     try:
-        _, pr = await create_invoice(
+        payment_hash, pr = await create_invoice(
             wallet_id=wallet.wallet.id,
             amount=data.amt,
             memo=data.memo or settings.lnbits_site_title,
             extra={"tag": "lndhub"},
         )
     except Exception as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail=f"Failed to create invoice: {str(exc)}"
-        )
+        return {"error": f"Failed to create invoice: {exc!s}"}
 
-    invoice = bolt11.decode(pr)
     return {
         "pay_req": pr,
         "payment_request": pr,
         "add_index": "500",
-        "r_hash": to_buffer(invoice.payment_hash),
-        "hash": invoice.payment_hash,
+        "r_hash": to_buffer(payment_hash),
+        "hash": payment_hash,
     }
 
 
-class CreateInvoice(BaseModel):
-    invoice: str = Query(...)
-
-
-@lndhub_ext.post("/ext/payinvoice")
+@lndhub_api_router.post("/payinvoice")
 async def lndhub_payinvoice(
-    r_invoice: CreateInvoice, wallet: WalletTypeInfo = Depends(require_admin_key)
+    r_invoice: LndhubCreateInvoice,
+    key_type: WalletTypeInfo = Depends(require_admin_key),
 ):
     try:
+        invoice = bolt11_decode(r_invoice.invoice)
         await pay_invoice(
-            wallet_id=wallet.wallet.id,
+            wallet_id=key_type.wallet.id,
             payment_request=r_invoice.invoice,
             extra={"tag": "lndhub"},
         )
     except Exception:
         return {"error": "Payment failed"}
-
-    invoice: bolt11.Invoice = bolt11.decode(r_invoice.invoice)
 
     return {
         "payment_error": "",
@@ -101,37 +79,25 @@ async def lndhub_payinvoice(
         "fee_msat": 0,
         "type": "paid_invoice",
         "fee": 0,
-        "value": invoice.amount_msat / 1000,
+        "value": invoice.amount_msat / 1000 if invoice.amount_msat else 0,
         "timestamp": int(time.time()),
         "memo": invoice.description,
     }
 
 
-@lndhub_ext.get("/ext/balance")
+@lndhub_api_router.get("/balance")
 async def lndhub_balance(
-    wallet: WalletTypeInfo = Depends(check_wallet),
+    key_type: WalletTypeInfo = Depends(check_wallet),
 ):
-    return {"BTC": {"AvailableBalance": wallet.wallet.balance}}
+    return {"BTC": {"AvailableBalance": key_type.wallet.balance}}
 
 
-@lndhub_ext.get("/ext/gettxs")
+@lndhub_api_router.get("/gettxs")
 async def lndhub_gettxs(
-    wallet: WalletTypeInfo = Depends(check_wallet),
+    key_type: WalletTypeInfo = Depends(check_wallet),
     limit: int = Query(20, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
-    for payment in await get_payments(
-        wallet_id=wallet.wallet.id,
-        complete=False,
-        pending=True,
-        outgoing=True,
-        incoming=False,
-        limit=limit,
-        offset=offset,
-        exclude_uncheckable=True,
-    ):
-        await payment.check_status()
-
     return [
         {
             "payment_preimage": payment.preimage,
@@ -146,7 +112,7 @@ async def lndhub_gettxs(
         for payment in reversed(
             (
                 await get_payments(
-                    wallet_id=wallet.wallet.id,
+                    wallet_id=key_type.wallet.id,
                     pending=True,
                     complete=True,
                     outgoing=True,
@@ -159,44 +125,29 @@ async def lndhub_gettxs(
     ]
 
 
-@lndhub_ext.get("/ext/getuserinvoices")
+@lndhub_api_router.get("/getuserinvoices")
 async def lndhub_getuserinvoices(
-    wallet: WalletTypeInfo = Depends(check_wallet),
+    key_type: WalletTypeInfo = Depends(check_wallet),
     limit: int = Query(20, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
-    funding_source = get_funding_source()
-    for invoice in await get_payments(
-        wallet_id=wallet.wallet.id,
-        complete=False,
-        pending=True,
-        outgoing=False,
-        incoming=True,
-        limit=limit,
-        offset=offset,
-        exclude_uncheckable=True,
-    ):
-        await invoice.set_pending(
-            (await funding_source.get_invoice_status(invoice.checking_id)).pending
-        )
-
     return [
         {
-            "r_hash": to_buffer(invoice.payment_hash),
-            "payment_request": invoice.bolt11,
+            "r_hash": to_buffer(payment.payment_hash),
+            "payment_request": payment.bolt11,
             "add_index": "500",
-            "description": invoice.extra.get("comment") or invoice.memo,
-            "payment_hash": invoice.payment_hash,
-            "ispaid": not invoice.pending,
-            "amt": int(invoice.amount / 1000),
+            "description": payment.extra.get("comment") or payment.memo,
+            "payment_hash": payment.payment_hash,
+            "ispaid": payment.success,
+            "amt": int(payment.amount / 1000),
             "expire_time": int(time.time() + 1800),
-            "timestamp": invoice.time,
+            "timestamp": payment.time,
             "type": "user_invoice",
         }
-        for invoice in reversed(
+        for payment in reversed(
             (
                 await get_payments(
-                    wallet_id=wallet.wallet.id,
+                    wallet_id=key_type.wallet.id,
                     pending=True,
                     complete=True,
                     incoming=True,
@@ -209,24 +160,24 @@ async def lndhub_getuserinvoices(
     ]
 
 
-@lndhub_ext.get("/ext/getbtc")
-async def lndhub_getbtc(wallet: WalletTypeInfo = Depends(check_wallet)):
+@lndhub_api_router.get("/getbtc", dependencies=[Depends(check_wallet)])
+async def lndhub_getbtc():
     "load an address for incoming onchain btc"
     return []
 
 
-@lndhub_ext.get("/ext/getpending")
-async def lndhub_getpending(wallet: WalletTypeInfo = Depends(check_wallet)):
+@lndhub_api_router.get("/getpending", dependencies=[Depends(check_wallet)])
+async def lndhub_getpending():
     "pending onchain transactions"
     return []
 
 
-@lndhub_ext.get("/ext/decodeinvoice")
-async def lndhub_decodeinvoice(invoice: str = Query(None)):
-    inv = bolt11.decode(invoice)
+@lndhub_api_router.get("/decodeinvoice")
+async def lndhub_decodeinvoice(invoice: str):
+    inv = bolt11_decode(invoice)
     return decoded_as_lndhub(inv)
 
 
-@lndhub_ext.get("/ext/checkrouteinvoice")
+@lndhub_api_router.get("/checkrouteinvoice")
 async def lndhub_checkrouteinvoice():
     "not implemented on canonical lndhub"
