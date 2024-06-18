@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "lndhub"
+version = "0.5.0"
+description = "LNbits LNDHub Extension"
+authors = ["dni <office@dnilabs.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+lnbits = "^0.12.7"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

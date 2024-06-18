@@ -1,12 +1,11 @@
 from fastapi import APIRouter
 
 from lnbits.db import Database
-from lnbits.helpers import template_renderer
+from .views_api import lndhub_api_router
+from .views import lndhub_generic_router
 
 db = Database("ext_lndhub")
-
 lndhub_ext: APIRouter = APIRouter(prefix="/lndhub", tags=["lndhub"])
-
 lndhub_static_files = [
     {
         "path": "/lndhub/static",
@@ -14,12 +13,5 @@ lndhub_static_files = [
     }
 ]
 
-
-def lndhub_renderer():
-    return template_renderer(["lndhub/templates"])
-
-
-from .decorators import *  # noqa: F401,F403
-from .utils import *  # noqa: F401,F403
-from .views import *  # noqa: F401,F403
-from .views_api import *  # noqa: F401,F403
+lndhub_ext.include_router(lndhub_generic_router)
+lndhub_ext.include_router(lndhub_api_router)
