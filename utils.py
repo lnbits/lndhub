@@ -2,7 +2,7 @@ from bolt11 import Bolt11
 
 
 def to_buffer(payment_hash: str):
-    return {"type": "Buffer", "data": [b for b in bytes.fromhex(payment_hash)]}
+    return {"type": "Buffer", "data": list(bytes.fromhex(payment_hash))}
 
 
 def decoded_as_lndhub(invoice: Bolt11):
