@@ -1,19 +1,19 @@
 import time
 from base64 import urlsafe_b64encode
 
-from fastapi import Depends, Query, APIRouter
-
 from bolt11 import decode as bolt11_decode
+from fastapi import APIRouter, Depends, Query
 from lnbits.core.crud import get_payments
-from lnbits.core.services import create_invoice, pay_invoice
 from lnbits.core.models import WalletTypeInfo
+from lnbits.core.services import create_invoice, pay_invoice
 from lnbits.settings import settings
 
 from .decorators import check_wallet, require_admin_key
+from .models import LndhubAddInvoice, LndhubAuthData, LndhubCreateInvoice
 from .utils import decoded_as_lndhub, to_buffer
-from .models import LndhubAuthData, LndhubCreateInvoice, LndhubAddInvoice
 
 lndhub_api_router = APIRouter(prefix="/ext")
+
 
 @lndhub_api_router.get("/getinfo")
 async def lndhub_getinfo():
@@ -107,19 +107,21 @@ async def lndhub_gettxs(
             "fee": payment.fee / 1000,
             "value": int(payment.amount / 1000),
             "timestamp": payment.time,
-            "memo": payment.extra.get("comment") or payment.memo if not payment.pending else "Payment in transition",
+            "memo": (
+                payment.extra.get("comment") or payment.memo
+                if not payment.pending
+                else "Payment in transition"
+            ),
         }
         for payment in reversed(
-            (
-                await get_payments(
-                    wallet_id=key_type.wallet.id,
-                    pending=True,
-                    complete=True,
-                    outgoing=True,
-                    incoming=False,
-                    limit=limit,
-                    offset=offset,
-                )
+            await get_payments(
+                wallet_id=key_type.wallet.id,
+                pending=True,
+                complete=True,
+                outgoing=True,
+                incoming=False,
+                limit=limit,
+                offset=offset,
             )
         )
     ]
@@ -138,23 +140,22 @@ async def lndhub_getuserinvoices(
             "add_index": "500",
             "description": payment.extra.get("comment") or payment.memo,
             "payment_hash": payment.payment_hash,
-            "ispaid": payment.success,
+            # todo it works for lnbits 0.12.11 but not for 0.12.10
+            "ispaid": payment.success,  # type: ignore
             "amt": int(payment.amount / 1000),
             "expire_time": int(time.time() + 1800),
             "timestamp": payment.time,
             "type": "user_invoice",
         }
         for payment in reversed(
-            (
-                await get_payments(
-                    wallet_id=key_type.wallet.id,
-                    pending=True,
-                    complete=True,
-                    incoming=True,
-                    outgoing=False,
-                    limit=limit,
-                    offset=offset,
-                )
+            await get_payments(
+                wallet_id=key_type.wallet.id,
+                pending=True,
+                complete=True,
+                incoming=True,
+                outgoing=False,
+                limit=limit,
+                offset=offset,
             )
         )
     ]
