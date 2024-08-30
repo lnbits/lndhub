@@ -140,7 +140,8 @@ async def lndhub_getuserinvoices(
             "add_index": "500",
             "description": payment.extra.get("comment") or payment.memo,
             "payment_hash": payment.payment_hash,
-            "ispaid": payment.success,
+            # todo it works for lnbits 0.12.11 but not for 0.12.10
+            "ispaid": payment.success,  # type: ignore
             "amt": int(payment.amount / 1000),
             "expire_time": int(time.time() + 1800),
             "timestamp": payment.time,
