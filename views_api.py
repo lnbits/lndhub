@@ -8,7 +8,7 @@ from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice, pay_invoice
 from lnbits.settings import settings
 
-from .decorators import check_wallet, require_admin_key
+from .decorators import lndhub_require_admin_key, lndhub_require_invoice_key
 from .models import LndhubAddInvoice, LndhubAuthData, LndhubCreateInvoice
 from .utils import decoded_as_lndhub, to_buffer
 
@@ -34,7 +34,7 @@ async def lndhub_auth(data: LndhubAuthData):
 
 @lndhub_api_router.post("/addinvoice")
 async def lndhub_addinvoice(
-    data: LndhubAddInvoice, wallet: WalletTypeInfo = Depends(check_wallet)
+    data: LndhubAddInvoice, wallet: WalletTypeInfo = Depends(lndhub_require_invoice_key)
 ):
     try:
         payment_hash, pr = await create_invoice(
@@ -58,7 +58,7 @@ async def lndhub_addinvoice(
 @lndhub_api_router.post("/payinvoice")
 async def lndhub_payinvoice(
     r_invoice: LndhubCreateInvoice,
-    key_type: WalletTypeInfo = Depends(require_admin_key),
+    key_type: WalletTypeInfo = Depends(lndhub_require_admin_key),
 ):
     try:
         invoice = bolt11_decode(r_invoice.invoice)
@@ -87,14 +87,14 @@ async def lndhub_payinvoice(
 
 @lndhub_api_router.get("/balance")
 async def lndhub_balance(
-    key_type: WalletTypeInfo = Depends(check_wallet),
+    key_type: WalletTypeInfo = Depends(lndhub_require_invoice_key),
 ):
     return {"BTC": {"AvailableBalance": key_type.wallet.balance}}
 
 
 @lndhub_api_router.get("/gettxs")
 async def lndhub_gettxs(
-    key_type: WalletTypeInfo = Depends(check_wallet),
+    key_type: WalletTypeInfo = Depends(lndhub_require_invoice_key),
     limit: int = Query(20, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
@@ -108,7 +108,7 @@ async def lndhub_gettxs(
             "value": int(payment.amount / 1000),
             "timestamp": payment.time,
             "memo": (
-                payment.extra.get("comment") or payment.memo
+                payment.extra and payment.extra.get("comment") or payment.memo
                 if not payment.pending
                 else "Payment in transition"
             ),
@@ -129,7 +129,7 @@ async def lndhub_gettxs(
 
 @lndhub_api_router.get("/getuserinvoices")
 async def lndhub_getuserinvoices(
-    key_type: WalletTypeInfo = Depends(check_wallet),
+    key_type: WalletTypeInfo = Depends(lndhub_require_invoice_key),
     limit: int = Query(20, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ):
@@ -138,10 +138,11 @@ async def lndhub_getuserinvoices(
             "r_hash": to_buffer(payment.payment_hash),
             "payment_request": payment.bolt11,
             "add_index": "500",
-            "description": payment.extra.get("comment") or payment.memo,
+            "description": (
+                payment.extra and payment.extra.get("comment") or payment.memo
+            ),
             "payment_hash": payment.payment_hash,
-            # todo it works for lnbits 0.12.11 but not for 0.12.10
-            "ispaid": payment.success,  # type: ignore
+            "ispaid": payment.success,
             "amt": int(payment.amount / 1000),
             "expire_time": int(time.time() + 1800),
             "timestamp": payment.time,
@@ -161,13 +162,15 @@ async def lndhub_getuserinvoices(
     ]
 
 
-@lndhub_api_router.get("/getbtc", dependencies=[Depends(check_wallet)])
+@lndhub_api_router.get("/getbtc", dependencies=[Depends(lndhub_require_invoice_key)])
 async def lndhub_getbtc():
     "load an address for incoming onchain btc"
     return []
 
 
-@lndhub_api_router.get("/getpending", dependencies=[Depends(check_wallet)])
+@lndhub_api_router.get(
+    "/getpending", dependencies=[Depends(lndhub_require_invoice_key)]
+)
 async def lndhub_getpending():
     "pending onchain transactions"
     return []

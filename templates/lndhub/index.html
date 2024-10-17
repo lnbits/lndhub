@@ -70,13 +70,11 @@
 
 {% endblock %} {% block scripts %} {{ window_vars(user) }}
 <script>
-  Vue.component(VueQrcode.name, VueQrcode)
-
-  new Vue({
+  window.app = Vue.createApp({
     el: '#vue',
     mixins: [windowMixin],
-    data: function () {
-      var wallets = JSON.parse('{{ user.wallets | tojson }}')
+    data() {
+      const wallets = JSON.parse('{{ user.wallets | tojson }}')
         .map(LNbits.map.wallet)
         .map(wallet => ({
           label: wallet.name,
