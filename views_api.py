@@ -37,7 +37,7 @@ async def lndhub_addinvoice(
     data: LndhubAddInvoice, wallet: WalletTypeInfo = Depends(lndhub_require_invoice_key)
 ):
     try:
-        payment_hash, pr = await create_invoice(
+        payment = await create_invoice(
             wallet_id=wallet.wallet.id,
             amount=data.amt,
             memo=data.memo or settings.lnbits_site_title,
@@ -47,11 +47,11 @@ async def lndhub_addinvoice(
         return {"error": f"Failed to create invoice: {exc!s}"}
 
     return {
-        "pay_req": pr,
-        "payment_request": pr,
+        "pay_req": payment.bolt11,
+        "payment_request": payment.bolt11,
         "add_index": "500",
-        "r_hash": to_buffer(payment_hash),
-        "hash": payment_hash,
+        "r_hash": to_buffer(payment.payment_hash),
+        "hash": payment.payment_hash,
     }
 
 
