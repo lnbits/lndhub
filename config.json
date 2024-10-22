@@ -3,5 +3,5 @@
   "short_description": "Access LNbits from BlueWallet or Zeus",
   "tile": "/lndhub/static/image/lndhub.png",
   "contributors": ["fiatjaf", "dni"],
-  "min_lnbits_version": "0.12.11"
+  "min_lnbits_version": "1.0.0"
 }

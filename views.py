@@ -14,5 +14,5 @@ lndhub_generic_router = APIRouter()
 @lndhub_generic_router.get("/")
 async def lndhub_index(request: Request, user: User = Depends(check_user_exists)):
     return lndhub_renderer().TemplateResponse(
-        "lndhub/index.html", {"request": request, "user": user.dict()}
+        "lndhub/index.html", {"request": request, "user": user.json()}
     )

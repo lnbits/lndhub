@@ -1,5 +1,5 @@
 {% extends "base.html" %} {% from "macros.jinja" import window_vars with context
-%} {% block page %} {% raw %}
+%} {% block page %}
 <div class="row q-col-gutter-md">
   <div class="col-12 col-md-8 col-lg-7 q-gutter-y-md">
     <div class="row q-col-gutter-md">
@@ -10,14 +10,13 @@
       >
         <q-card-section class="q-pa-none">
           <div class="text-center">
+            <span class="text-capitalize" v-text="type"></span>
             <a class="text-secondary" :href="selectedWallet[type]">
-              <q-responsive :ratio="1" class="q-mx-sm">
-                <qrcode
-                  :value="selectedWallet[type]"
-                  :options="{width: 800}"
-                  class="rounded-borders"
-                ></qrcode>
-              </q-responsive>
+              <lnbits-qrcode
+                :value="selectedWallet[type]"
+                :options="{width: 350}"
+                class="rounded-borders"
+              ></lnbits-qrcode>
             </a>
           </div>
           <div class="row q-mt-lg items-center justify-center">
@@ -26,7 +25,7 @@
               color="grey"
               @click="copyText(selectedWallet[type])"
               class="text-center q-mb-md"
-              >Copy LndHub {{type}} URL</q-btn
+              >Copy LndHub <span v-text="type"></span> URL</q-btn
             >
           </div>
         </q-card-section>
@@ -46,8 +45,6 @@
       </q-form>
     </q-card>
   </div>
-
-  {% endraw %}
 
   <div class="col-12 col-md-4 col-lg-5 q-gutter-y-md">
     <q-card>
@@ -70,23 +67,21 @@
 
 {% endblock %} {% block scripts %} {{ window_vars(user) }}
 <script>
-  Vue.component(VueQrcode.name, VueQrcode)
-
-  new Vue({
+  window.app = Vue.createApp({
     el: '#vue',
     mixins: [windowMixin],
-    data: function () {
-      var wallets = JSON.parse('{{ user.wallets | tojson }}')
-        .map(LNbits.map.wallet)
-        .map(wallet => ({
-          label: wallet.name,
-          admin: `lndhub://admin:${wallet.adminkey}@${location.protocol}//${location.host}/lndhub/ext/`,
-          invoice: `lndhub://invoice:${wallet.inkey}@${location.protocol}//${location.host}/lndhub/ext/`
-        }))
-
+    data() {
+      const {wallets} = JSON.parse({{ user | tojson | safe }})
+      const mappedWallets = wallets
+      .map(LNbits.map.wallet)
+      .map(wallet => ({
+        label: wallet.name,
+        admin: `lndhub://admin:${wallet.adminkey}@${location.protocol}//${location.host}/lndhub/ext/`,
+        invoice: `lndhub://invoice:${wallet.inkey}@${location.protocol}//${location.host}/lndhub/ext/`
+      }))
       return {
-        wallets: wallets,
-        selectedWallet: wallets[0]
+        wallets: mappedWallets,
+        selectedWallet: mappedWallets[0]
       }
     }
   })
