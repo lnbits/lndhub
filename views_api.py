@@ -144,7 +144,11 @@ async def lndhub_getuserinvoices(
             "payment_hash": payment.payment_hash,
             "ispaid": payment.success,
             "amt": int(payment.amount / 1000),
-            "expire_time": int(time.time() + 1800),
+            "expire_time": (
+                int(payment.expiry.timestamp())
+                if payment.expiry
+                else payment.time.timestamp() + 3600
+            ),
             "timestamp": int(payment.time.timestamp()),
             "type": "user_invoice",
         }
