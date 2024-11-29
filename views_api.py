@@ -106,7 +106,7 @@ async def lndhub_gettxs(
             "type": "paid_invoice",
             "fee": payment.fee / 1000,
             "value": int(payment.amount / 1000),
-            "timestamp": payment.time,
+            "timestamp": int(payment.time.timestamp()),
             "memo": (
                 payment.extra and payment.extra.get("comment") or payment.memo
                 if not payment.pending
@@ -144,8 +144,12 @@ async def lndhub_getuserinvoices(
             "payment_hash": payment.payment_hash,
             "ispaid": payment.success,
             "amt": int(payment.amount / 1000),
-            "expire_time": int(time.time() + 1800),
-            "timestamp": payment.time,
+            "expire_time": (
+                int(payment.expiry.timestamp())
+                if payment.expiry
+                else payment.time.timestamp() + 3600
+            ),
+            "timestamp": int(payment.time.timestamp()),
             "type": "user_invoice",
         }
         for payment in reversed(
