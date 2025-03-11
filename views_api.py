@@ -1,4 +1,3 @@
-import time
 from base64 import urlsafe_b64encode
 
 from bolt11 import decode as bolt11_decode
@@ -36,18 +35,13 @@ async def lndhub_auth(data: LndhubAuthData):
 async def lndhub_addinvoice(
     data: LndhubAddInvoice, wallet: WalletTypeInfo = Depends(lndhub_require_invoice_key)
 ):
-    try:
-        payment = await create_invoice(
-            wallet_id=wallet.wallet.id,
-            amount=data.amt,
-            memo=data.memo or settings.lnbits_site_title,
-            extra={"tag": "lndhub"},
-        )
-    except Exception as exc:
-        return {"error": f"Failed to create invoice: {exc!s}"}
-
+    payment = await create_invoice(
+        wallet_id=wallet.wallet.id,
+        amount=data.amt,
+        memo=data.memo or settings.lnbits_site_title,
+        extra={"tag": "lndhub"},
+    )
     return {
-        "pay_req": payment.bolt11,
         "payment_request": payment.bolt11,
         "add_index": "500",
         "r_hash": to_buffer(payment.payment_hash),
@@ -62,25 +56,28 @@ async def lndhub_payinvoice(
 ):
     try:
         invoice = bolt11_decode(r_invoice.invoice)
-        await pay_invoice(
+    except Exception:
+        return {"payment_error": "Invalid invoice"}
+    try:
+        payment = await pay_invoice(
             wallet_id=key_type.wallet.id,
             payment_request=r_invoice.invoice,
             extra={"tag": "lndhub"},
         )
     except Exception:
-        return {"error": "Payment failed"}
+        return {"payment_error": "Payment failed"}
 
     return {
         "payment_error": "",
-        "payment_preimage": "0" * 64,
+        "payment_preimage": payment.preimage,
         "route": {},
         "payment_hash": invoice.payment_hash,
         "decoded": decoded_as_lndhub(invoice),
-        "fee_msat": 0,
+        "fee_msat": payment.fee,
         "type": "paid_invoice",
-        "fee": 0,
+        "fee": int(payment.fee / 1000),
         "value": invoice.amount_msat / 1000 if invoice.amount_msat else 0,
-        "timestamp": int(time.time()),
+        "timestamp": payment.time.timestamp(),
         "memo": invoice.description,
     }
 
@@ -139,7 +136,7 @@ async def lndhub_getuserinvoices(
             "payment_request": payment.bolt11,
             "add_index": "500",
             "description": (
-                payment.extra and payment.extra.get("comment") or payment.memo
+                (payment.extra and payment.extra.get("comment")) or payment.memo
             ),
             "payment_hash": payment.payment_hash,
             "ispaid": payment.success,
