@@ -42,7 +42,7 @@ async def lndhub_addinvoice(
         extra={"tag": "lndhub"},
     )
     return {
-        "pay_req": payment.bolt11, # client backwards compatibility
+        "pay_req": payment.bolt11,  # client backwards compatibility
         "payment_request": payment.bolt11,
         "add_index": "500",
         "r_hash": to_buffer(payment.payment_hash),
