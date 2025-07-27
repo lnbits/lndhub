@@ -2,7 +2,7 @@ from base64 import urlsafe_b64encode
 
 from bolt11 import decode as bolt11_decode
 from fastapi import APIRouter, Depends, Query
-from lnbits.core.crud import get_payments
+from lnbits.core.crud.payments import get_payments
 from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice, pay_invoice
 from lnbits.settings import settings
