@@ -106,7 +106,7 @@ async def lndhub_gettxs(
             "value": int(payment.amount / 1000),
             "timestamp": int(payment.time.timestamp()),
             "memo": (
-                payment.extra and payment.extra.get("comment") or payment.memo
+                (payment.extra and payment.extra.get("comment")) or payment.memo
                 if not payment.pending
                 else "Payment in transition"
             ),
