@@ -11,13 +11,11 @@
         <q-card-section class="q-pa-none">
           <div class="text-center">
             <span class="text-capitalize" v-text="type"></span>
-            <a class="text-secondary" :href="selectedWallet[type]">
-              <lnbits-qrcode
-                :value="selectedWallet[type]"
-                :options="{width: 350}"
-                class="rounded-borders"
-              ></lnbits-qrcode>
-            </a>
+            <lnbits-qrcode
+              :value="selectedWallet[type]"
+              :options="{width: 350}"
+              class="rounded-borders"
+            ></lnbits-qrcode>
           </div>
           <div class="row q-mt-lg items-center justify-center">
             <q-btn
