@@ -72,8 +72,9 @@ async def lndhub_payinvoice(
     except Exception as exc:
         return {"payment_error": f"Payment failed. ({exc!s})"}
 
-    # lnbits has a payment timeout, but lndhub doesn't,
-    # so we need to wait until the payment is complete
+    # lnbits has a payment timeout, and will return pending.
+    # lndhub has no concept of pending outgoing payments,
+    # so we wait longer and eventually return a payment_error
     if payment.pending:
         retries = 0
         while settings.lnbits_running:
