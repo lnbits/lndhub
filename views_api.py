@@ -1,8 +1,11 @@
+"""https://github.com/BlueWallet/LndHub/blob/master/doc/Send-requirements.md"""
+
+import asyncio
 from base64 import urlsafe_b64encode
 
 from bolt11 import decode as bolt11_decode
 from fastapi import APIRouter, Depends, Query
-from lnbits.core.crud import get_payments
+from lnbits.core.crud import get_payments, get_standalone_payment
 from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice, pay_invoice
 from lnbits.settings import settings
@@ -59,14 +62,34 @@ async def lndhub_payinvoice(
         invoice = bolt11_decode(r_invoice.invoice)
     except Exception:
         return {"payment_error": "Invalid invoice"}
+
     try:
         payment = await pay_invoice(
             wallet_id=key_type.wallet.id,
             payment_request=r_invoice.invoice,
             extra={"tag": "lndhub"},
         )
-    except Exception:
-        return {"payment_error": "Payment failed"}
+    except Exception as exc:
+        return {"payment_error": f"Payment failed. ({exc!s})"}
+
+    # lnbits has a payment timeout, and will return pending.
+    # lndhub has no concept of pending outgoing payments,
+    # so we wait longer and eventually return a payment_error
+    if payment.pending:
+        retries = 0
+        while settings.lnbits_running:
+            if retries >= 20:
+                return {"payment_error": "Payment still pending after 1 minute..."}
+            check_payment = await get_standalone_payment(payment.checking_id)
+            if not check_payment:
+                return {"payment_error": "Payment failed. (No payment)"}
+            if check_payment.failed:
+                return {"payment_error": "Payment failed."}
+            if check_payment.success:
+                payment = check_payment
+                break
+            retries += 1
+            await asyncio.sleep(3)
 
     return {
         "payment_error": "",
@@ -114,7 +137,7 @@ async def lndhub_gettxs(
         for payment in reversed(
             await get_payments(
                 wallet_id=key_type.wallet.id,
-                pending=True,
+                pending=False,
                 complete=True,
                 outgoing=True,
                 incoming=False,
