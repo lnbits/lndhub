@@ -74,20 +74,21 @@ async def lndhub_payinvoice(
 
     # lnbits has a payment timeout, but lndhub doesn't,
     # so we need to wait until the payment is complete
-    pending = payment.pending
-    retries = 0
-    while pending:
-        if retries >= 20:
-            return {"payment_error": "Payment still pending after 1 minute..."}
-        check_payment = await get_standalone_payment(payment.checking_id)
-        if not check_payment:
-            return {"payment_error": "Payment failed. (No payment)"}
-        if check_payment.failed:
-            return {"payment_error": "Payment failed."}
-        if check_payment.success:
-            pending = False
-        retries += 1
-        await asyncio.sleep(3)
+    if payment.pending:
+        retries = 0
+        while settings.lnbits_running:
+            if retries >= 20:
+                return {"payment_error": "Payment still pending after 1 minute..."}
+            check_payment = await get_standalone_payment(payment.checking_id)
+            if not check_payment:
+                return {"payment_error": "Payment failed. (No payment)"}
+            if check_payment.failed:
+                return {"payment_error": "Payment failed."}
+            if check_payment.success:
+                payment = check_payment
+                break
+            retries += 1
+            await asyncio.sleep(3)
 
     return {
         "payment_error": "",
