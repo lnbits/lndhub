@@ -1,8 +1,11 @@
+"""https://github.com/BlueWallet/LndHub/blob/master/doc/Send-requirements.md"""
+
+import asyncio
 from base64 import urlsafe_b64encode
 
 from bolt11 import decode as bolt11_decode
 from fastapi import APIRouter, Depends, Query
-from lnbits.core.crud import get_payments
+from lnbits.core.crud import get_payments, get_standalone_payment
 from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice, pay_invoice
 from lnbits.settings import settings
@@ -59,14 +62,31 @@ async def lndhub_payinvoice(
         invoice = bolt11_decode(r_invoice.invoice)
     except Exception:
         return {"payment_error": "Invalid invoice"}
+
     try:
         payment = await pay_invoice(
             wallet_id=key_type.wallet.id,
             payment_request=r_invoice.invoice,
             extra={"tag": "lndhub"},
         )
-    except Exception:
-        return {"payment_error": "Payment failed"}
+    except Exception as exc:
+        return {"payment_error": f"Payment failed. ({exc!s})"}
+
+    if not payment:
+        return {"payment_error": "Payment failed. (No payment created)"}
+
+    # lnbits has a payment timeout, but lndhub doesn't,
+    # so we need to wait until the payment is complete
+    pending = payment.pending
+    while pending:
+        payment = await get_standalone_payment(payment.checking_id)
+        if not payment:
+            return {"payment_error": "Payment failed. (No payment)"}
+        if payment.failed:
+            return {"payment_error": "Payment failed."}
+        if payment.success:
+            pending = False
+        await asyncio.sleep(3)
 
     return {
         "payment_error": "",
@@ -114,7 +134,7 @@ async def lndhub_gettxs(
         for payment in reversed(
             await get_payments(
                 wallet_id=key_type.wallet.id,
-                pending=True,
+                pending=False,
                 complete=True,
                 outgoing=True,
                 incoming=False,
