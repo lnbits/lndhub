@@ -1,18 +1,9 @@
-from fastapi import APIRouter, Depends, Request
-from lnbits.core.models import User
+from fastapi import APIRouter, Depends
+from lnbits.core.views.generic import index
 from lnbits.decorators import check_user_exists
-from lnbits.helpers import template_renderer
-
-
-def lndhub_renderer():
-    return template_renderer(["lndhub/templates"])
-
 
 lndhub_generic_router = APIRouter()
 
-
-@lndhub_generic_router.get("/")
-async def lndhub_index(request: Request, user: User = Depends(check_user_exists)):
-    return lndhub_renderer().TemplateResponse(
-        "lndhub/index.html", {"request": request, "user": user.json()}
-    )
+lndhub_generic_router.add_api_route(
+    "/", methods=["GET"], endpoint=index, dependencies=[Depends(check_user_exists)]
+)

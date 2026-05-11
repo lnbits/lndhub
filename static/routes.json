@@ -1,0 +1,8 @@
+[
+  {
+    "path": "/lndhub/",
+    "name": "PageLndhub",
+    "template": "/lndhub/static/index.vue",
+    "component": "/lndhub/static/index.js"
+  }
+]
