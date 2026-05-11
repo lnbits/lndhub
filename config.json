@@ -1,11 +1,34 @@
 {
+  "id": "lndhub",
+  "version": "1.0.2",
   "name": "LndHub",
+  "repo": "https://github.com/lnbits/lndhub",
   "short_description": "Access LNbits from BlueWallet or Zeus",
+  "description": "",
   "tile": "/lndhub/static/image/lndhub.png",
-  "contributors": ["fiatjaf", "dni"],
   "min_lnbits_version": "1.0.0",
-  "images": [],
+  "contributors": [
+    {
+      "name": "fiatjaf",
+      "uri": "https://github.com/fiatjaf",
+      "role": "Developer"
+    },
+    {
+      "name": "dni",
+      "uri": "https://github.com/dni",
+      "role": "Developer"
+    }
+  ],
+  "images": [
+    {
+      "uri": "https://raw.githubusercontent.com/lnbits/lndhub/main/static/image/1.png"
+    }
+  ],
   "description_md": "https://raw.githubusercontent.com/lnbits/lndhub/main/description.md",
   "terms_and_conditions_md": "https://raw.githubusercontent.com/lnbits/lndhub/main/toc.md",
-  "license": "MIT"
+  "license": "MIT",
+  "paid_features": "",
+  "tags": ["Wallet"],
+  "donate": "",
+  "hidden": false
 }

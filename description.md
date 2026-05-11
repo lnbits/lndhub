@@ -1,3 +1,10 @@
-Access your wallet on Zeus or Bluewallet
+Access your LNbits wallet from LndHub-compatible mobile apps.
 
-Lndhub has nothing to do with lnd, it is just the name of the HTTP/JSON protocol you can use to talk to your Lightning server.
+Its functions include:
+
+- Exposing your wallet via the LndHub HTTP/JSON protocol
+- Connecting mobile wallets.
+- Managing wallet access credentials
+- Supporting multiple wallet connections
+
+Essential for users who want mobile wallet access to their LNbits funds through popular apps like Zeus, BlueWallet or BitBanana.
