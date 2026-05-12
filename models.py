@@ -10,6 +10,7 @@ class LndhubAddInvoice(BaseModel):
     amt: int = Query(...)
     memo: str = Query(...)
     preimage: str = Query(None)
+    expiry: int = Query(None)
 
 
 class LndhubAuthData(BaseModel):

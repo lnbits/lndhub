@@ -42,6 +42,7 @@ async def lndhub_addinvoice(
         wallet_id=wallet.wallet.id,
         amount=data.amt,
         memo=data.memo or settings.lnbits_site_title,
+        expiry=data.expiry,
         extra={"tag": "lndhub"},
     )
     return {
@@ -50,6 +51,7 @@ async def lndhub_addinvoice(
         "add_index": "500",
         "r_hash": to_buffer(payment.payment_hash),
         "hash": payment.payment_hash,
+        "expiry": data.expiry,
     }
 
 
