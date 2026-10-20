@@ -6,7 +6,7 @@
   "short_description": "Access LNbits from BlueWallet or Zeus",
   "description": "",
   "tile": "/lndhub/static/image/lndhub.png",
-  "min_lnbits_version": "1.0.0",
+  "min_lnbits_version": "1.7.0",
   "contributors": [
     {
       "name": "fiatjaf",

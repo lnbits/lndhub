@@ -4,7 +4,7 @@ import asyncio
 from base64 import urlsafe_b64encode
 
 from bolt11 import decode as bolt11_decode
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from lnbits.core.crud import get_payments, get_standalone_payment
 from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice, pay_invoice
@@ -24,13 +24,14 @@ async def lndhub_getinfo():
 
 @lndhub_api_router.post("/auth")
 async def lndhub_auth(data: LndhubAuthData):
-    token = (
-        data.refresh_token
-        if data.refresh_token
-        else urlsafe_b64encode((data.login + ":" + data.password).encode()).decode(
+    if data.refresh_token:
+        token = data.refresh_token
+    else:
+        if data.login is None or data.password is None:
+            raise HTTPException(400, "Login and password are required.")
+        token = urlsafe_b64encode((data.login + ":" + data.password).encode()).decode(
             "ascii"
         )
-    )
     return {"refresh_token": token, "access_token": token}
 
 

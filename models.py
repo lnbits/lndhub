@@ -9,10 +9,10 @@ class LndhubCreateInvoice(BaseModel):
 class LndhubAddInvoice(BaseModel):
     amt: int = Query(...)
     memo: str = Query(...)
-    preimage: str = Query(None)
+    preimage: str | None = Query(None)
 
 
 class LndhubAuthData(BaseModel):
-    login: str = Query(None)
-    password: str = Query(None)
-    refresh_token: str = Query(None)
+    login: str | None = Query(None)
+    password: str | None = Query(None)
+    refresh_token: str | None = Query(None)
