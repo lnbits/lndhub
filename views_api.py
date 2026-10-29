@@ -61,6 +61,7 @@ async def lndhub_payinvoice(
 ):
     try:
         invoice = bolt11_decode(r_invoice.invoice)
+        decoded = decoded_as_lndhub(invoice)
     except Exception:
         return {"payment_error": "Invalid invoice"}
 
@@ -97,7 +98,7 @@ async def lndhub_payinvoice(
         "payment_preimage": payment.preimage,
         "route": {},
         "payment_hash": invoice.payment_hash,
-        "decoded": decoded_as_lndhub(invoice),
+        "decoded": decoded,
         "fee_msat": payment.fee,
         "type": "paid_invoice",
         "fee": int(payment.fee / 1000),
