@@ -1,12 +1,12 @@
 {
   "id": "lndhub",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "name": "LndHub",
   "repo": "https://github.com/lnbits/lndhub",
   "short_description": "Access LNbits from BlueWallet or Zeus",
   "description": "",
   "tile": "/lndhub/static/image/lndhub.png",
-  "min_lnbits_version": "1.7.0",
+  "min_lnbits_version": "1.7.0-rc1",
   "contributors": [
     {
       "name": "fiatjaf",
